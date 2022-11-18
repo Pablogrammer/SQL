@@ -1,0 +1,32 @@
+----------------
+--Ejercicio 10  |
+----------------
+--Escribir un disparador de base de datos que haga fallar cualquier operación de modificación
+--del apellido o del número de un empleado, o que suponga una subida de sueldo superior al 10%.
+
+CREATE OR REPLACE FUNCTION comprueba()
+RETURNS TRIGGER
+LANGUAGE PLPGSQL
+AS
+$$ BEGIN
+resultado := 'SE HAN REALIZADO LOS CAMBIOS'
+IF NEW.apeelido1 != OLD.apellido1 OR NEW.apellido1 != OLD.apellido1 OR NEW.SALARIO > (10%)*OLD.SALARIO
+	THEN INSERT INTO empleado(apellido1,apellido2,salario)
+	VALUES(OLD.apellido1,OLD.apellido2,OLD.salario)
+	resultado := 'NO SE HAN PODIDO REALIZAR LOS CAMBIOS'
+END IF;
+RETURN resultado;
+END;$$
+
+CREATE OR TRIGGER fallo_operacion
+BEFORE UPDATE OF apellido1, apellido2, codigo_empleado, salario
+ON empleado
+FOR EACH ROW
+EXECUTE PROCEDURE comprueba();
+
+
+--14. Hacer que se actualicen automáticamente las existencias de los productos cuando se inserte
+--un nuevo pedido o cuando se rectifique la cantidad de uno existente. Se supone que un
+--pedido produce una reducción del stock (existencias) del producto.
+
+

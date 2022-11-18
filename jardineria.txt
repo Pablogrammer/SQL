@@ -1,0 +1,240 @@
+
+--Bloque C
+
+SELECT acceso ala información
+INSERT dar de alta
+DELETE dar de baja
+UPDATE actualizar
+
+
+CREATE ROLE "Publicidad" WITH
+	NOLOGIN
+	NOSUPERUSER
+	NOCREATEDB
+	NOCREATEROLE
+	INHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1;
+GRANT SELECT, INSERT, DELETE ON producto, gama_producto, cliente TO "Publicidad"; 
+
+CREATE ROLE "Comercial" WITH
+	NOLOGIN
+	NOSUPERUSER
+	NOCREATEDB
+	NOCREATEROLE
+	INHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1;
+GRANT SELECT ON cliente, pago, pedido, producto TO "Comercial";
+GRANT UPDATE producto, pago TO "Comercial";
+
+CREATE ROLE "Tienda_en_linea" WITH
+	NOLOGIN
+	NOSUPERUSER
+	NOCREATEDB
+	NOCREATEROLE
+	INHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1;
+GRANT INSERT, UPDATE ON cliente, pedido TO "Tienda_en_linea";
+GRANT INSERT ON pago TO "Tienda_En_Linea";
+
+CREATE ROLE "Recursos_Humanos" WITH
+	NOLOGIN
+	NOSUPERUSER
+	NOCREATEDB
+	NOCREATEROLE
+	INHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1;
+GRANT UPDATE ON oficina.telefono, oficina.linea_direccion1, oficina.linea_direccion2 TO "Recursos_Humanos";
+
+CREATE ROLE "Administracion" WITH
+	NOLOGIN
+	NOSUPERUSER
+	NOCREATEDB
+	NOCREATEROLE
+	INHERIT
+	NOREPLICATION
+	CONNECTION LIMIT -1;
+GRANT ALL ON DATABASE jardineria TO "Administracion";
+
+CREATE USER "Pablo" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Pablo';
+
+GRANT "Publicidad" TO "Pablo";
+
+CREATE USER "Maria" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Maria';
+
+GRANT "Publicidad" TO "Maria";
+
+CREATE USER "Paco" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Paco';
+
+GRANT "Publicidad" TO "Paco";
+
+CREATE USER "Pepe" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Pepe';
+
+GRANT "Comercial" TO "Pepe";
+
+CREATE USER "Lola" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Lola';
+
+GRANT "Comercial" TO "Lola";
+
+CREATE USER "Roberto" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Roberto';
+
+GRANT "Comercial" TO "Roberto";
+
+CREATE USER "David" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'David';
+
+GRANT "Recursos_Humanos" TO "David";
+
+CREATE USER "Raul" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Raul';
+
+GRANT "Recursos_Humanos" TO "Raul";
+
+CREATE USER "Andres" WITH
+    NOLOGIN
+    NOSUPERUSER
+    NOCREATEDB
+    NOCREATEROLE
+    INHERIT
+    NOREPLICATION
+    CONNECTION LIMIT -1
+    PASSWORD 'Andres';
+
+GRANT "Recursos_Humanos" TO "Andres";
+
+--3 Listado de nombre, apellidos, puesto y correo electrónico de los empleados que son jefes
+--Esta vista podría encajar para el rol Recursos_Humanos
+
+CREATE VIEW descripcion_empleado_jefe AS
+(SELECT nombre, apellido1, apellido2, puesto, email
+FROM empleado
+WHERE codigo_jefe is null);
+
+--6. Listado con el nombre y apellidos de los empleados que trabajan en Barcelona
+--Esta vista podría encajar para el rol Recursos_Humanos
+
+CREATE VIEW empleados_barcelona AS
+(SELECT nombre, apellido1, apellido2
+FROM empleado
+WHERE codigo_oficina LIKE 'BCN-ES');
+
+--9. Listado con el código de pedido, código y nombre de cliente, fecha esperada y fecha de
+--entrega de los pedidos que NO han sido entregados a tiempo.
+--Esta vista podría encajar para los roles Comercial y tienda_en_linea
+
+CREATE VIEW pedido_tardio AS
+(SELECT codigo_pedido, cliente.codigo_cliente, cliente.nombre_cliente, fecha_esperada, fecha_entrega
+FROM pedido, cliente
+WHERE pedido.codigo_cliente = cliente.codigo_cliente and fecha_entrega > fecha_esperada);
+
+--12. Listado con el número de pedido, el nombre del cliente, la fecha de entrega y la fecha
+--requerida de los pedidos que no han sido entregados a tiempo
+--Esta vista podría encajar para los roles Comercial y tienda_en_linea
+
+CREATE VIEW pedido_tardio2 AS
+(SELECT codigo_pedido, cliente.nombre_cliente, fecha_esperada, fecha_entrega
+FROM pedido, cliente
+WHERE pedido.codigo_cliente = cliente.codigo_cliente and fecha_entrega > fecha_esperada);
+
+--15. Listado con el nombre de cada cliente (en un campo) y lo que ha pagado cada uno
+--Esta vista podría encajar para el rol Comercial 
+
+CREATE VIEW pago_total AS
+(SELECT DISTINCT cliente.nombre_cliente, sum(pago.total)
+FROM cliente, pago
+WHERE cliente.codigo_cliente = pago.codigo_cliente
+GROUP BY cliente.nombre_cliente
+ORDER BY cliente.nombre_cliente asc);
+
+--18. Crear una vista que muestre las 5 gamas de productos más vendidas en orden
+--Esta vista podría encajar para los roles Comercial y Publicidad
+
+CREATE VIEW gamas_productos AS
+(SELECT  gama_producto.gama, 
+sum(detalle_pedido.cantidad) AS cantidad_vendida
+FROM gama_producto
+INNER JOIN producto
+ON gama_producto.gama = producto.gama
+INNER JOIN detalle_pedido
+ON producto.codigo_producto = detalle_pedido.codigo_producto
+GROUP BY gama_producto.gama
+ORDER BY gama_producto.gama, cantidad_vendida ASC);
+
+--19. Crear una vista en la que se desglose la cantidad de pedidos, clientes, y total facturado por
+--países, ordenado por la última cifra
+--Esta vista podría encajar para los roles Comercial y Publicidad
+
+
+
+
+
+
+
+
+
+
